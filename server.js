@@ -15,7 +15,6 @@ const upload = multer();
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-// Store uploaded files URIs per session (in production, use Redis/DB)
 const uploadedFiles = new Map();
 
 app.use(express.json());
@@ -31,7 +30,6 @@ app.use((req, res, next) => {
 
 app.use(express.static(path.join(__dirname, "public")));
 
-// Upload file to Gemini File API
 app.post("/upload-file", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
@@ -42,10 +40,8 @@ app.post("/upload-file", upload.single("file"), async (req, res) => {
     
     console.log(`Uploading file: ${req.file.originalname} (${(req.file.size / 1024).toFixed(2)} KB)`);
 
-    // Create blob from buffer
     const fileBlob = new Blob([req.file.buffer], { type: req.file.mimetype });
 
-    // Upload to Gemini File API
     const uploadResult = await ai.files.upload({
       file: fileBlob,
       config: {
@@ -55,10 +51,9 @@ app.post("/upload-file", upload.single("file"), async (req, res) => {
 
     console.log(`File uploaded, waiting for processing... (${uploadResult.name})`);
 
-    // Wait for file to be processed
     let fileStatus = await ai.files.get({ name: uploadResult.name });
     let attempts = 0;
-    const maxAttempts = 30; // 30 attempts * 2 seconds = 1 minute max
+    const maxAttempts = 30;
 
     while (fileStatus.state === 'PROCESSING' && attempts < maxAttempts) {
       await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -75,7 +70,6 @@ app.post("/upload-file", upload.single("file"), async (req, res) => {
       throw new Error('File processing timeout');
     }
 
-    // Store file info
     if (!uploadedFiles.has(sessionId)) {
       uploadedFiles.set(sessionId, []);
     }
@@ -103,22 +97,18 @@ app.post("/upload-file", upload.single("file"), async (req, res) => {
   }
 });
 
-// Get uploaded files for session
 app.get("/files/:sessionId", (req, res) => {
   const { sessionId } = req.params;
   const files = uploadedFiles.get(sessionId) || [];
   res.json({ files });
 });
 
-// Delete file from Gemini and session
 app.delete("/files/:sessionId/:fileName", async (req, res) => {
   try {
     const { sessionId, fileName } = req.params;
     
-    // Delete from Gemini
     await ai.files.delete({ name: fileName });
     
-    // Remove from session
     if (uploadedFiles.has(sessionId)) {
       const files = uploadedFiles.get(sessionId);
       const filtered = files.filter(f => f.name !== fileName);
@@ -137,16 +127,13 @@ app.post("/generate", async (req, res) => {
     const { prompt, temperature = 0.9, history = [], fileUris = [], sessionId = 'default' } = req.body;
     if (!prompt) return res.status(400).json({ error: "Prompt required" });
 
-    // Create chat with history
     const chat = ai.chats.create({
       model: "gemini-2.5-flash",
       history: history,
     });
 
-    // Build message with file references if provided
     let messageParts = [{ text: prompt }];
     
-    // Add file references from URIs
     if (fileUris && fileUris.length > 0) {
       const sessionFiles = uploadedFiles.get(sessionId) || [];
       fileUris.forEach(uri => {
@@ -162,18 +149,14 @@ app.post("/generate", async (req, res) => {
       });
     }
 
-    // Send message with streaming
     const stream = await chat.sendMessageStream({
       message: messageParts,
       temperature: parseFloat(temperature),
     });
-
-    // Set headers for SSE (Server-Sent Events)
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    // Stream chunks to client
     for await (const chunk of stream) {
       res.write(`data: ${JSON.stringify({ text: chunk.text })}\n\n`);
     }
@@ -200,13 +183,10 @@ app.post("/generate-multimodal", upload.single("file"), async (req, res) => {
 
     console.log(`Processing file: ${req.file.originalname} (${mimeType}, ${(req.file.size / 1024).toFixed(2)} KB)`);
 
-    // Create chat with history
     const chat = ai.chats.create({
       model: "gemini-2.5-flash",
       history: JSON.parse(history || '[]'),
     });
-
-    // Send message with file (image, PDF, or document) streaming
     const stream = await chat.sendMessageStream({
       message: [
         { text: prompt },
@@ -215,12 +195,9 @@ app.post("/generate-multimodal", upload.single("file"), async (req, res) => {
       temperature: parseFloat(temperature),
     });
 
-    // Set headers for SSE
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-
-    // Stream chunks to client
     for await (const chunk of stream) {
       res.write(`data: ${JSON.stringify({ text: chunk.text })}\n\n`);
     }

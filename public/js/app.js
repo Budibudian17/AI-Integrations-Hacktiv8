@@ -6,7 +6,6 @@ let sessionId = 'session_' + Date.now();
 function setTemperature(value, button) {
     document.getElementById('temperature').value = value;
     
-    // Reset all buttons
     document.querySelectorAll('.temperature-btn').forEach(btn => {
         btn.classList.remove('border-black', 'bg-black', 'text-white');
         btn.classList.add('border-gray-300');
@@ -16,7 +15,6 @@ function setTemperature(value, button) {
         });
     });
     
-    // Activate clicked button
     button.classList.remove('border-gray-300');
     button.classList.add('border-black', 'bg-black', 'text-white');
     button.querySelectorAll('.text-xs').forEach(text => {
@@ -68,7 +66,6 @@ function handleFileSelect(event) {
     document.getElementById('uploadPreview').classList.add('flex');
     lucide.createIcons();
     
-    // Show audio quick actions if audio file
     if (isAudio) {
         showAudioQuickActions();
     } else {
@@ -402,7 +399,6 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     
 
     try {
-        // Step 1: Upload file to Gemini File API if present
         if (fileToSend) {
             showAlert('Uploading file to Gemini...', 'info');
             showLoading();
@@ -428,7 +424,6 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             
             showAlert(`File uploaded: ${uploadResult.file.displayName}`, 'success');
             
-            // Show file in message
             const reader = new FileReader();
             reader.onload = (e) => {
                 addMessage('user', prompt, e.target.result, {
@@ -444,7 +439,6 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             addMessage('user', prompt);
         }
 
-        // Add to history
         conversationHistory.push({
             role: "user",
             parts: [{ text: prompt }]
@@ -452,7 +446,6 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
 
         showLoading();
 
-        // Step 2: Generate response with file URIs
         const fileUris = uploadedFiles.map(f => f.uri);
         
         const response = await fetch('/generate', {
@@ -585,7 +578,6 @@ function updateStreamingMessage(messageId, content) {
     chatArea.scrollTop = chatArea.scrollHeight;
 }
 
-// Enter key submit
 document.getElementById('prompt').addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -593,7 +585,6 @@ document.getElementById('prompt').addEventListener('keydown', (e) => {
     }
 });
 
-// Paste image from clipboard
 document.addEventListener('paste', (e) => {
     const items = e.clipboardData?.items;
     if (!items) return;
@@ -630,5 +621,4 @@ document.addEventListener('paste', (e) => {
     }
 });
 
-// Initialize Lucide icons on page load
 lucide.createIcons();
