@@ -1,22 +1,79 @@
-// Global state
 let selectedFile = null;
+let conversationHistory = [];
+let uploadedFiles = [];
+let sessionId = 'session_' + Date.now();
 
-// File handling
+function setTemperature(value, button) {
+    document.getElementById('temperature').value = value;
+    
+    // Reset all buttons
+    document.querySelectorAll('.temperature-btn').forEach(btn => {
+        btn.classList.remove('border-black', 'bg-black', 'text-white');
+        btn.classList.add('border-gray-300');
+        btn.querySelectorAll('.text-xs').forEach(text => {
+            text.classList.remove('opacity-70');
+            text.classList.add('text-gray-500');
+        });
+    });
+    
+    // Activate clicked button
+    button.classList.remove('border-gray-300');
+    button.classList.add('border-black', 'bg-black', 'text-white');
+    button.querySelectorAll('.text-xs').forEach(text => {
+        text.classList.remove('text-gray-500');
+        text.classList.add('opacity-70');
+    });
+}
+
 function handleFileSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
 
     selectedFile = file;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        document.getElementById('previewImage').src = e.target.result;
-        document.getElementById('fileName').textContent = file.name;
-        document.getElementById('fileSize').textContent = `${(file.size / 1024).toFixed(1)} KB`;
-        document.getElementById('uploadPreview').classList.remove('hidden');
-        document.getElementById('uploadPreview').classList.add('flex');
-        lucide.createIcons();
-    };
-    reader.readAsDataURL(file);
+    const isImage = file.type.startsWith('image/');
+    const isAudio = file.type.startsWith('audio/');
+    
+    document.getElementById('fileName').textContent = file.name;
+    const fileSizeKB = file.size / 1024;
+    const fileSizeText = fileSizeKB > 1024 
+        ? `${(fileSizeKB / 1024).toFixed(1)} MB` 
+        : `${fileSizeKB.toFixed(1)} KB`;
+    document.getElementById('fileSize').textContent = fileSizeText;
+    
+    const previewImage = document.getElementById('previewImage');
+    
+    if (isImage) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            previewImage.src = e.target.result;
+            previewImage.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    } else {
+        previewImage.classList.add('hidden');
+        const fileExt = file.name.split('.').pop().toUpperCase();
+        const icon = isAudio ? 'music' : 'file-text';
+        const bgColor = isAudio ? 'bg-purple-100 text-purple-700' : 'bg-gray-200';
+        
+        document.getElementById('fileName').innerHTML = `
+            <div class="flex items-center gap-2">
+                <i data-lucide="${icon}" class="w-4 h-4"></i>
+                <span>${file.name}</span>
+                <span class="text-xs ${bgColor} px-2 py-1 rounded font-semibold">${fileExt}</span>
+            </div>
+        `;
+    }
+    
+    document.getElementById('uploadPreview').classList.remove('hidden');
+    document.getElementById('uploadPreview').classList.add('flex');
+    lucide.createIcons();
+    
+    // Show audio quick actions if audio file
+    if (isAudio) {
+        showAudioQuickActions();
+    } else {
+        hideAudioQuickActions();
+    }
 }
 
 function removeFile() {
@@ -26,19 +83,36 @@ function removeFile() {
     preview.style.display = 'none';
     preview.classList.add('hidden');
     preview.classList.remove('flex');
+    hideAudioQuickActions();
 }
 
-// Markdown parser
+function showAudioQuickActions() {
+    const quickActions = document.getElementById('audioQuickActions');
+    if (quickActions) {
+        quickActions.classList.remove('hidden');
+    }
+}
+
+function hideAudioQuickActions() {
+    const quickActions = document.getElementById('audioQuickActions');
+    if (quickActions) {
+        quickActions.classList.add('hidden');
+    }
+}
+
+function setAudioPrompt(prompt) {
+    const promptInput = document.getElementById('prompt');
+    promptInput.value = prompt;
+    promptInput.focus();
+}
+
 function parseMarkdown(text) {
-    // Parse tables first
     text = parseMarkdownTables(text);
     
-    // Parse headings
     text = text.replace(/^### (.+)$/gm, '<h3 class="text-base font-semibold mt-4 mb-2">$1</h3>');
     text = text.replace(/^## (.+)$/gm, '<h2 class="text-lg font-semibold mt-4 mb-2">$1</h2>');
     text = text.replace(/^# (.+)$/gm, '<h1 class="text-xl font-bold mt-4 mb-2">$1</h1>');
     
-    // Parse inline formatting
     text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
     text = text.replace(/`(.+?)`/g, '<code class="bg-gray-100 px-1 rounded">$1</code>');
@@ -46,7 +120,6 @@ function parseMarkdown(text) {
     return text;
 }
 
-// Parse markdown tables to HTML
 function parseMarkdownTables(text) {
     const lines = text.split('\n');
     let result = [];
@@ -56,11 +129,9 @@ function parseMarkdownTables(text) {
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
         
-        // Check if line is a table row (contains pipes)
         if (line.includes('|')) {
             const cells = line.split('|').map(cell => cell.trim()).filter(cell => cell);
             
-            // Skip separator rows (contains only dashes and pipes)
             if (cells.every(cell => /^[-:]+$/.test(cell))) {
                 continue;
             }
@@ -72,7 +143,6 @@ function parseMarkdownTables(text) {
             
             tableRows.push(cells);
         } else {
-            // End of table
             if (inTable && tableRows.length > 0) {
                 result.push(convertToHTMLTable(tableRows));
                 tableRows = [];
@@ -82,7 +152,6 @@ function parseMarkdownTables(text) {
         }
     }
     
-    // Handle table at end of text
     if (inTable && tableRows.length > 0) {
         result.push(convertToHTMLTable(tableRows));
     }
@@ -90,13 +159,11 @@ function parseMarkdownTables(text) {
     return result.join('\n');
 }
 
-// Convert table rows to HTML table
 function convertToHTMLTable(rows) {
     if (rows.length === 0) return '';
     
     let html = '<table class="min-w-full border-collapse border border-gray-300 my-4">';
     
-    // First row as header
     html += '<thead class="bg-gray-100"><tr>';
     rows[0].forEach(cell => {
         const parsedCell = parseInlineMarkdown(cell);
@@ -104,7 +171,6 @@ function convertToHTMLTable(rows) {
     });
     html += '</tr></thead>';
     
-    // Rest as body
     if (rows.length > 1) {
         html += '<tbody>';
         for (let i = 1; i < rows.length; i++) {
@@ -122,7 +188,6 @@ function convertToHTMLTable(rows) {
     return html;
 }
 
-// Parse inline markdown (for table cells)
 function parseInlineMarkdown(text) {
     return text
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
@@ -130,8 +195,7 @@ function parseInlineMarkdown(text) {
         .replace(/`(.+?)`/g, '<code class="bg-gray-100 px-1 rounded">$1</code>');
 }
 
-// Message handling
-function addMessage(type, content, imageUrl = null) {
+function addMessage(type, content, fileUrl = null, fileInfo = null) {
     const chatArea = document.getElementById('chatArea');
     const emptyState = chatArea.querySelector('.flex.flex-col.items-center');
     if (emptyState && emptyState.parentElement === chatArea) {
@@ -142,13 +206,37 @@ function addMessage(type, content, imageUrl = null) {
     messageDiv.className = `message-slide py-6 ${type === 'user' ? 'bg-white' : 'bg-gray-50'}`;
 
     if (type === 'user') {
+        let filePreview = '';
+        if (fileUrl && fileInfo) {
+            if (fileInfo.type.startsWith('image/')) {
+                filePreview = `<img src="${fileUrl}" class="max-w-xs rounded-lg mt-2 border border-gray-300" alt="Uploaded">`;
+            } else {
+                const fileExt = fileInfo.name.split('.').pop().toUpperCase();
+                const isAudio = fileInfo.type.startsWith('audio/');
+                const icon = isAudio ? 'music' : 'file-text';
+                const iconBg = isAudio ? 'bg-purple-500' : 'bg-gray-500';
+                
+                filePreview = `
+                    <div class="mt-2 p-3 bg-white/20 rounded-lg border border-white/30 flex items-center gap-2">
+                        <div class="${iconBg} p-2 rounded">
+                            <i data-lucide="${icon}" class="w-4 h-4 text-white"></i>
+                        </div>
+                        <div class="flex-1 text-xs">
+                            <div class="font-semibold">${fileInfo.name}</div>
+                            <div class="opacity-70">${(fileInfo.size / 1024).toFixed(1)} KB • ${fileExt}</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
         messageDiv.innerHTML = `
             <div class="max-w-3xl mx-auto px-4">
                 <div class="flex gap-4 items-start justify-end">
                     <div class="flex-1 flex flex-col items-end">
                         <div class="bg-black text-white rounded-2xl rounded-br-sm px-4 py-3 max-w-lg">
                             <div class="text-sm">${content}</div>
-                            ${imageUrl ? `<img src="${imageUrl}" class="max-w-xs rounded-lg mt-2 border border-gray-300" alt="Uploaded">` : ''}
+                            ${filePreview}
                         </div>
                     </div>
                     <div class="flex-shrink-0 w-8 h-8 bg-black rounded-full flex items-center justify-center">
@@ -184,7 +272,6 @@ function addMessage(type, content, imageUrl = null) {
     lucide.createIcons();
 }
 
-// Loading state
 function showLoading() {
     const chatArea = document.getElementById('chatArea');
     const emptyState = chatArea.querySelector('.flex.flex-col.items-center');
@@ -221,14 +308,15 @@ function removeLoading() {
     if (loading) loading.remove();
 }
 
-// Alert/notification
 function showAlert(message, type = 'success') {
     const alert = document.createElement('div');
-    alert.className = `fixed top-5 right-5 px-4 py-3 rounded-lg shadow-lg alert-slide flex items-center gap-2 z-50 ${
-        type === 'error' ? 'bg-red-500 text-white' : 'bg-black text-white'
-    }`;
+    const bgColor = type === 'error' ? 'bg-red-500 text-white' : 
+                    type === 'info' ? 'bg-blue-500 text-white' : 
+                    'bg-black text-white';
+    alert.className = `fixed top-5 right-5 px-4 py-3 rounded-lg shadow-lg alert-slide flex items-center gap-2 z-50 ${bgColor}`;
+    const icon = type === 'error' ? 'alert-circle' : type === 'info' ? 'info' : 'check-circle';
     alert.innerHTML = `
-        <i data-lucide="${type === 'error' ? 'alert-circle' : 'check-circle'}" class="w-4 h-4"></i>
+        <i data-lucide="${icon}" class="w-4 h-4"></i>
         <span class="text-sm">${message}</span>
     `;
     document.body.appendChild(alert);
@@ -240,29 +328,24 @@ function showAlert(message, type = 'success') {
     }, 3000);
 }
 
-// Copy text to clipboard
 function copyText(button) {
     const messageContent = button.closest('.flex-1').querySelector('.text-sm');
     if (!messageContent) return;
     
-    // Create a clean text version without HTML
     let text = '';
     
-    // Process each child node
     const processNode = (node) => {
         if (node.nodeType === Node.TEXT_NODE) {
             text += node.textContent;
         } else if (node.nodeName === 'BR') {
             text += '\n';
         } else if (node.nodeName === 'TABLE') {
-            // Convert table to plain text format
             const rows = node.querySelectorAll('tr');
             rows.forEach((row, rowIndex) => {
                 const cells = row.querySelectorAll('th, td');
                 const cellTexts = Array.from(cells).map(cell => cell.textContent.trim());
                 text += cellTexts.join('\t') + '\n';
                 
-                // Add separator after header row
                 if (rowIndex === 0 && row.closest('thead')) {
                     text += cellTexts.map(() => '---').join('\t') + '\n';
                 }
@@ -276,7 +359,6 @@ function copyText(button) {
         } else if (node.nodeName === 'CODE') {
             text += '`' + node.textContent + '`';
         } else {
-            // Recursively process child nodes
             node.childNodes.forEach(child => processNode(child));
         }
     };
@@ -290,7 +372,6 @@ function copyText(button) {
     }
 }
 
-// Clear chat
 function clearChat() {
     const chatArea = document.getElementById('chatArea');
     chatArea.innerHTML = `
@@ -300,11 +381,13 @@ function clearChat() {
             <p class="text-sm mt-2">Image upload is optional</p>
         </div>
     `;
+    conversationHistory = [];
+    uploadedFiles = [];
+    sessionId = 'session_' + Date.now();
     removeFile();
     lucide.createIcons();
 }
 
-// Form submission
 document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -316,64 +399,191 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
 
     sendBtn.disabled = true;
     promptInput.value = '';
-    removeFile();
+    
 
     try {
-        let response;
-        
+        // Step 1: Upload file to Gemini File API if present
         if (fileToSend) {
-            await new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    addMessage('user', prompt, e.target.result);
-                    resolve();
-                };
-                reader.readAsDataURL(fileToSend);
-            });
-
+            showAlert('Uploading file to Gemini...', 'info');
             showLoading();
-
+            
             const formData = new FormData();
             formData.append('file', fileToSend);
-            formData.append('prompt', prompt);
-            formData.append('temperature', temperature);
+            formData.append('sessionId', sessionId);
 
-            response = await fetch('/generate-multimodal', {
+            const uploadResponse = await fetch('/upload-file', {
                 method: 'POST',
                 body: formData
             });
+
+            removeLoading();
+
+            if (!uploadResponse.ok) {
+                const error = await uploadResponse.json();
+                throw new Error(error.error || 'File upload failed');
+            }
+
+            const uploadResult = await uploadResponse.json();
+            uploadedFiles.push(uploadResult.file);
+            
+            showAlert(`File uploaded: ${uploadResult.file.displayName}`, 'success');
+            
+            // Show file in message
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                addMessage('user', prompt, e.target.result, {
+                    name: fileToSend.name,
+                    size: fileToSend.size,
+                    type: fileToSend.type
+                });
+            };
+            reader.readAsDataURL(fileToSend);
+            
+            removeFile();
         } else {
             addMessage('user', prompt);
-            showLoading();
-
-            response = await fetch('/generate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ prompt, temperature })
-            });
         }
+
+        // Add to history
+        conversationHistory.push({
+            role: "user",
+            parts: [{ text: prompt }]
+        });
+
+        showLoading();
+
+        // Step 2: Generate response with file URIs
+        const fileUris = uploadedFiles.map(f => f.uri);
+        
+        const response = await fetch('/generate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                prompt, 
+                temperature,
+                history: conversationHistory.slice(0, -1),
+                fileUris: fileUris,
+                sessionId: sessionId
+            })
+        });
 
         removeLoading();
 
         if (!response.ok) {
-            const error = await response.json();
-            addMessage('ai', `Error ${response.status}: ${error.error || 'Unknown error'}`);
+            const error = await response.text();
+            addMessage('ai', `Error ${response.status}: ${error || 'Unknown error'}`);
             showAlert('Error generating response', 'error');
+            conversationHistory.pop();
         } else {
-            const data = await response.json();
-            addMessage('ai', data.result);
-            showAlert('Response generated successfully!');
+            await handleStreamingResponse(response);
         }
     } catch (err) {
         removeLoading();
-        addMessage('ai', `Network Error: ${err.message}`);
-        showAlert('Failed to connect to server', 'error');
+        addMessage('ai', `Error: ${err.message}`);
+        showAlert(err.message, 'error');
+        conversationHistory.pop();
     } finally {
         sendBtn.disabled = false;
     }
 });
+
+async function handleStreamingResponse(response) {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let accumulatedText = '';
+    let streamingMessageId = null;
+
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            
+            if (done) break;
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const data = line.slice(6);
+                    
+                    if (data === '[DONE]') {
+                        conversationHistory.push({
+                            role: "model",
+                            parts: [{ text: accumulatedText }]
+                        });
+                        showAlert('Response generated successfully!');
+                        return;
+                    }
+
+                    try {
+                        const parsed = JSON.parse(data);
+                        accumulatedText += parsed.text;
+
+                        if (!streamingMessageId) {
+                            streamingMessageId = addStreamingMessage('ai', accumulatedText);
+                        } else {
+                            updateStreamingMessage(streamingMessageId, accumulatedText);
+                        }
+                    } catch (e) {
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Streaming error:', error);
+        throw error;
+    }
+}
+
+function addStreamingMessage(type, content) {
+    const chatArea = document.getElementById('chatArea');
+    const messageDiv = document.createElement('div');
+    const messageId = 'msg-' + Date.now();
+    messageDiv.id = messageId;
+    messageDiv.className = `message-slide py-6 bg-gray-50`;
+
+    const parsedContent = parseMarkdown(content);
+    messageDiv.innerHTML = `
+        <div class="max-w-3xl mx-auto px-4">
+            <div class="flex gap-4 items-start">
+                <div class="flex-shrink-0 w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center">
+                    <i data-lucide="bot" class="w-4 h-4 text-white"></i>
+                </div>
+                <div class="flex-1">
+                    <div class="text-sm text-gray-900 prose prose-sm max-w-none streaming-content">${parsedContent}</div>
+                    <div class="flex items-center gap-2 mt-3">
+                        <button onclick="copyText(this)" class="flex items-center gap-1 px-2 py-1 hover:bg-gray-200 rounded text-xs transition-colors text-gray-600">
+                            <i data-lucide="copy" class="w-3 h-3"></i>
+                            Copy
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    chatArea.appendChild(messageDiv);
+    chatArea.scrollTop = chatArea.scrollHeight;
+    lucide.createIcons();
+    
+    return messageId;
+}
+
+function updateStreamingMessage(messageId, content) {
+    const messageDiv = document.getElementById(messageId);
+    if (!messageDiv) return;
+
+    const contentDiv = messageDiv.querySelector('.streaming-content');
+    if (contentDiv) {
+        const parsedContent = parseMarkdown(content);
+        contentDiv.innerHTML = parsedContent;
+    }
+
+    const chatArea = document.getElementById('chatArea');
+    chatArea.scrollTop = chatArea.scrollHeight;
+}
 
 // Enter key submit
 document.getElementById('prompt').addEventListener('keydown', (e) => {
