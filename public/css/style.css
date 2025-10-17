@@ -148,3 +148,8 @@
 #audioQuickActions button:active {
     transform: translateY(0);
 }
+
+/* Portfolio promo card - minimalist style */
+.bg-white\/5:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}

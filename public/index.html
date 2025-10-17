@@ -33,8 +33,61 @@
             </button>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-2">
-            <div class="text-xs text-gray-500 px-3 py-2">Recent Chats</div>
+        <div class="flex-1 overflow-y-auto p-4">
+            <!-- Portfolio Promo Card -->
+            <div class="bg-white/5 rounded-lg p-5 mb-4 border border-gray-800 hover:border-gray-700 transition-all duration-300">
+                <div class="flex flex-col items-center text-center mb-4">
+                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-3">
+                        <i data-lucide="user" class="w-6 h-6 text-black"></i>
+                    </div>
+                    <h3 class="font-bold text-white text-sm mb-1">Built by Hilmi</h3>
+                    <p class="text-xs text-gray-400">Full Stack Developer</p>
+                </div>
+                
+                <div class="flex flex-wrap gap-1.5 justify-center mb-4">
+                    <span class="px-2 py-0.5 bg-white/10 border border-gray-700 rounded text-xs text-gray-300">React</span>
+                    <span class="px-2 py-0.5 bg-white/10 border border-gray-700 rounded text-xs text-gray-300">Node.js</span>
+                    <span class="px-2 py-0.5 bg-white/10 border border-gray-700 rounded text-xs text-gray-300">AI</span>
+                </div>
+                
+                <a href="https://hilmiportfoliodev.vercel.app/" target="_blank" 
+                   class="block w-full py-2.5 bg-white hover:bg-gray-200 text-black font-medium rounded-lg transition-all duration-200 text-center text-sm">
+                    <div class="flex items-center justify-center gap-2">
+                        <span>View Portfolio</span>
+                        <i data-lucide="external-link" class="w-4 h-4"></i>
+                    </div>
+                </a>
+                
+                <p class="text-xs text-gray-500 text-center mt-3 leading-relaxed">
+                    Need a custom AI solution? Let's talk.
+                </p>
+            </div>
+            
+            <!-- Features Section -->
+            <div class="bg-white/5 rounded-lg p-4 border border-gray-800">
+                <div class="flex items-center gap-2 mb-3">
+                    <i data-lucide="zap" class="w-4 h-4 text-white"></i>
+                    <h4 class="text-xs font-semibold text-white">Features</h4>
+                </div>
+                <ul class="text-xs text-gray-400 space-y-1.5">
+                    <li class="flex items-center gap-2">
+                        <span class="w-1 h-1 bg-gray-600 rounded-full"></span>
+                        Multi-turn conversations
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span class="w-1 h-1 bg-gray-600 rounded-full"></span>
+                        Image & PDF analysis
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span class="w-1 h-1 bg-gray-600 rounded-full"></span>
+                        Audio transcription
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span class="w-1 h-1 bg-gray-600 rounded-full"></span>
+                        Streaming responses
+                    </li>
+                </ul>
+            </div>
         </div>
 
         <div class="p-4 border-t border-gray-800">
