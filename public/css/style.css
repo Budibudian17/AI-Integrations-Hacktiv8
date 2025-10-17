@@ -1,0 +1,115 @@
+/* Animation Keyframes */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes bounce {
+    0%, 80%, 100% {
+        transform: scale(0);
+    }
+    40% {
+        transform: scale(1);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(100px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Animation Classes */
+.message-slide {
+    animation: slideIn 0.3s ease-out;
+}
+
+.loading span {
+    animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.loading span:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.loading span:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+.alert-slide {
+    animation: slideInRight 0.3s ease-out;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Prose styling for AI messages */
+.prose {
+    white-space: pre-wrap;
+}
+
+.prose table {
+    white-space: normal;
+    display: table;
+    width: 100%;
+    overflow-x: auto;
+}
+
+.prose table th,
+.prose table td {
+    white-space: normal;
+    vertical-align: top;
+}
+
+.prose table thead th {
+    background-color: #f3f4f6;
+}
+
+/* Striped table rows */
+.prose tbody tr:nth-child(even) {
+    background-color: #f9fafb;
+}
+
+.prose tbody tr:hover {
+    background-color: #f3f4f6;
+    transition: background-color 0.2s ease;
+}
+
+/* Headings in prose */
+.prose h1,
+.prose h2,
+.prose h3 {
+    color: #111827;
+}
+
+/* Code blocks in prose */
+.prose code {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+}

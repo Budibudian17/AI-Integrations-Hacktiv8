@@ -1,0 +1,26 @@
+{
+  "name": "gemini-vision-chat",
+  "version": "1.0.0",
+  "description": "A minimalist chat application with Google Gemini Vision AI integration",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "gemini",
+    "ai",
+    "chat",
+    "vision",
+    "multimodal"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google/genai": "^1.25.0",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "multer": "^2.0.2"
+  }
+}

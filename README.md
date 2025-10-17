@@ -1,6 +1,6 @@
-# Gemini Vision Chat
+# Hilmi Vision Chat
 
-A minimalist, ChatGPT-style web application with Google Gemini Vision AI integration. Supports both text-only and multimodal (image + text) conversations.
+A minimalist, ChatGPT-style web application with Google Hilmi Vision AI integration. Supports both text-only and multimodal (image + text) conversations.
 
 ## 🎨 Features
 
