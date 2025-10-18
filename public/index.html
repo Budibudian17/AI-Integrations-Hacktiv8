@@ -39,7 +39,7 @@
                 <div class="flex flex-col items-center text-center mb-4">
                     <img src="/img/hilmi4.jpg" alt="Profile Picture" class="w-12 h-12 rounded-full mb-3">
                     <h3 class="font-bold text-white text-sm mb-1">Built by Hilmi</h3>
-                    <p class="text-xs text-gray-400">Full Stack Developer</p>
+                    <p class="text-xs text-gray-400">A Front End Dev aiming to become a Full Stack Dev.</p>
                 </div>
                 
                 <div class="flex flex-wrap gap-1.5 justify-center mb-4">
@@ -167,17 +167,45 @@
                 </div>
 
                 <form id="uploadForm" enctype="multipart/form-data">
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-end gap-2">
                         <div class="relative">
-                            <input type="file" name="file" id="file" accept="image/*,application/pdf,.txt,.doc,.docx,.csv,.json,.xml,.html,audio/*" onchange="handleFileSelect(event)" class="hidden">
-                            <button type="button" onclick="document.getElementById('file').click()" 
+                            <input type="file" name="file" id="file" accept="image/*" onchange="handleFileSelect(event)" class="hidden">
+                            <button type="button" onclick="toggleFileTypeMenu(event)" 
                                     class="flex items-center justify-center w-12 h-12 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200">
                                 <i data-lucide="paperclip" class="w-5 h-5 text-gray-700"></i>
                             </button>
+                            
+                            <!-- File Type Menu -->
+                            <div id="fileTypeMenu" class="hidden absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 py-2 w-48 z-10">
+                                <button type="button" onclick="selectFileType('image')" 
+                                        class="w-full px-4 py-2.5 hover:bg-gray-100 flex items-center gap-3 text-left transition-colors">
+                                    <i data-lucide="image" class="w-5 h-5 text-blue-600"></i>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">Image</div>
+                                        <div class="text-xs text-gray-500">JPG, PNG, GIF, etc</div>
+                                    </div>
+                                </button>
+                                <button type="button" onclick="selectFileType('audio')" 
+                                        class="w-full px-4 py-2.5 hover:bg-gray-100 flex items-center gap-3 text-left transition-colors">
+                                    <i data-lucide="music" class="w-5 h-5 text-purple-600"></i>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">Audio</div>
+                                        <div class="text-xs text-gray-500">MP3, WAV, FLAC, etc</div>
+                                    </div>
+                                </button>
+                                <button type="button" onclick="selectFileType('document')" 
+                                        class="w-full px-4 py-2.5 hover:bg-gray-100 flex items-center gap-3 text-left transition-colors">
+                                    <i data-lucide="file-text" class="w-5 h-5 text-gray-600"></i>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">Document</div>
+                                        <div class="text-xs text-gray-500">PDF, TXT, DOC, etc</div>
+                                    </div>
+                                </button>
+                            </div>
                         </div>
 
-                        <input type="text" name="prompt" id="prompt" placeholder="Ask anything (attach file/audio)..." required
-                               class="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors">
+                        <textarea name="prompt" id="prompt" placeholder="Ask anything (attach file/audio)... Shift+Enter for new line" required rows="1"
+                                  class="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors resize-none overflow-hidden"></textarea>
 
                         <button type="submit" id="sendBtn" 
                                 class="flex items-center gap-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium">

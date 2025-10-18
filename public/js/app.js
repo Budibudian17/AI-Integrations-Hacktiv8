@@ -3,6 +3,67 @@ let conversationHistory = [];
 let uploadedFiles = [];
 let sessionId = 'session_' + Date.now();
 
+// Auto-expand textarea
+function autoExpandTextarea(textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+}
+
+// Initialize textarea auto-expand on load
+document.addEventListener('DOMContentLoaded', () => {
+    const promptInput = document.getElementById('prompt');
+    if (promptInput) {
+        promptInput.addEventListener('input', function() {
+            autoExpandTextarea(this);
+        });
+    }
+    
+    // Close file type menu when clicking outside
+    document.addEventListener('click', (e) => {
+        const menu = document.getElementById('fileTypeMenu');
+        const fileTypeButton = document.querySelector('[onclick*="toggleFileTypeMenu"]');
+        
+        // Don't close if clicking the toggle button or inside the menu
+        if (menu && !menu.classList.contains('hidden')) {
+            const isClickInsideMenu = menu.contains(e.target);
+            const isClickOnButton = fileTypeButton && fileTypeButton.contains(e.target);
+            
+            if (!isClickInsideMenu && !isClickOnButton) {
+                menu.classList.add('hidden');
+            }
+        }
+    });
+});
+
+function toggleFileTypeMenu(event) {
+    if (event) {
+        event.stopPropagation();
+    }
+    const menu = document.getElementById('fileTypeMenu');
+    menu.classList.toggle('hidden');
+    lucide.createIcons();
+}
+
+function selectFileType(type) {
+    const fileInput = document.getElementById('file');
+    const menu = document.getElementById('fileTypeMenu');
+    
+    // Set accept attribute based on type
+    const acceptTypes = {
+        'image': 'image/*',
+        'audio': 'audio/*',
+        'document': 'application/pdf,.txt,.doc,.docx,.csv,.json,.xml,.html'
+    };
+    
+    fileInput.accept = acceptTypes[type];
+    
+    // Hide menu
+    menu.classList.add('hidden');
+    
+    // Trigger file input
+    fileInput.click();
+}
+
 function setTemperature(value, button) {
     document.getElementById('temperature').value = value;
     
@@ -232,7 +293,7 @@ function addMessage(type, content, fileUrl = null, fileInfo = null) {
                 <div class="flex gap-4 items-start justify-end">
                     <div class="flex-1 flex flex-col items-end">
                         <div class="bg-black text-white rounded-2xl rounded-br-sm px-4 py-3 max-w-lg">
-                            <div class="text-sm">${content}</div>
+                            <div class="text-sm user-message-text">${content}</div>
                             ${filePreview}
                         </div>
                     </div>
@@ -396,6 +457,7 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
 
     sendBtn.disabled = true;
     promptInput.value = '';
+    promptInput.style.height = 'auto'; // Reset textarea height
     
 
     try {
