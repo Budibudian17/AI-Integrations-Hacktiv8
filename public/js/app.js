@@ -4,31 +4,22 @@ let uploadedFiles = [];
 let sessionId = 'session_' + Date.now();
 let userIsScrolling = false;
 
-// Auto-expand textarea
 function autoExpandTextarea(textarea) {
     textarea.style.height = 'auto';
     textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
 }
-
-// Smart scroll - only auto-scroll if user is at bottom
 function smartScroll(element) {
     if (!element) return;
     
-    // Check if user is near bottom (within 100px threshold)
     const isNearBottom = element.scrollHeight - element.scrollTop - element.clientHeight < 100;
     
-    // Only auto-scroll if user is at/near bottom or not manually scrolling
     if (isNearBottom || !userIsScrolling) {
         element.scrollTop = element.scrollHeight;
     }
 }
-
-// Initialize textarea auto-expand on load
 document.addEventListener('DOMContentLoaded', () => {
-    // Move form to centered position initially
     moveFormToCentered();
     
-    // Initialize icons
     lucide.createIcons();
     
     const promptInput = document.getElementById('prompt');
@@ -38,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Track user scroll behavior
     const chatArea = document.getElementById('chatArea');
     if (chatArea) {
         chatArea.addEventListener('scroll', () => {
@@ -47,12 +37,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Close file type menu when clicking outside
     document.addEventListener('click', (e) => {
         const menu = document.getElementById('fileTypeMenu');
         const fileTypeButton = document.querySelector('[onclick*="toggleFileTypeMenu"]');
         
-        // Don't close if clicking the toggle button or inside the menu
         if (menu && !menu.classList.contains('hidden')) {
             const isClickInsideMenu = menu.contains(e.target);
             const isClickOnButton = fileTypeButton && fileTypeButton.contains(e.target);
@@ -68,7 +56,6 @@ function moveFormToCentered() {
     const centeredForm = document.getElementById('centeredForm');
     const bottomFormInner = document.querySelector('#bottomFormContainer .max-w-3xl');
     
-    // Move all form elements from bottom to centered
     if (bottomFormInner) {
         while (bottomFormInner.firstChild) {
             centeredForm.appendChild(bottomFormInner.firstChild);
@@ -83,12 +70,10 @@ function moveFormToBottom() {
     const bottomFormContainer = document.getElementById('bottomFormContainer');
     const bottomFormInner = bottomFormContainer.querySelector('.max-w-3xl');
     
-    // Move all elements from centered to bottom
     while (centeredForm.firstChild) {
         bottomFormInner.appendChild(centeredForm.firstChild);
     }
     
-    // Hide empty state, show chat area and bottom form
     document.getElementById('emptyState').classList.add('hidden');
     document.getElementById('chatArea').classList.remove('hidden');
     document.getElementById('chatArea').classList.add('flex-1', 'overflow-y-auto');
@@ -108,7 +93,6 @@ function selectFileType(type) {
     const fileInput = document.getElementById('file');
     const menu = document.getElementById('fileTypeMenu');
     
-    // Set accept attribute based on type
     const acceptTypes = {
         'image': 'image/*',
         'audio': 'audio/*',
@@ -117,10 +101,8 @@ function selectFileType(type) {
     
     fileInput.accept = acceptTypes[type];
     
-    // Hide menu
     menu.classList.add('hidden');
     
-    // Trigger file input
     fileInput.click();
 }
 
@@ -490,14 +472,10 @@ function clearChat() {
     const chatArea = document.getElementById('chatArea');
     chatArea.innerHTML = '';
     
-    // Hide chat area and bottom form
     chatArea.classList.add('hidden');
     document.getElementById('bottomFormContainer').classList.add('hidden');
-    
-    // Show empty state
     document.getElementById('emptyState').classList.remove('hidden');
     
-    // Move form back to centered
     moveFormToCentered();
     
     conversationHistory = [];
@@ -518,12 +496,10 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
 
     sendBtn.disabled = true;
     promptInput.value = '';
-    promptInput.style.height = 'auto'; // Reset textarea height
+    promptInput.style.height = 'auto';
     
-    // Reset scroll tracking for new message (auto-scroll to new response)
     userIsScrolling = false;
     
-    // Switch layout to bottom BEFORE any chat area manipulation
     const chatArea = document.getElementById('chatArea');
     const isFirstMessage = chatArea.classList.contains('hidden');
     if (isFirstMessage) {
@@ -532,7 +508,6 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
 
     try {
         if (fileToSend) {
-            // Show user message FIRST with file preview
             const reader = new FileReader();
             reader.onload = (e) => {
                 addMessage('user', prompt, e.target.result, {
@@ -543,7 +518,6 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             };
             reader.readAsDataURL(fileToSend);
             
-            // THEN upload file to Gemini
             showAlert('Uploading file to Gemini...', 'info');
             showLoading();
             
