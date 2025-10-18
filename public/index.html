@@ -96,16 +96,24 @@
         </div>
     </div>
 
-    <div class="flex-1 flex flex-col h-screen overflow-hidden">
-        <div id="chatArea" class="flex-1 overflow-y-auto">
-            <div class="flex flex-col items-center justify-center h-full text-gray-400 px-4">
-                <i data-lucide="message-circle" class="w-16 h-16 mb-4 stroke-1"></i>
-                <p class="text-lg">Ask anything or upload an image</p>
-                <p class="text-sm mt-2">Image upload is optional</p>
+    <div class="flex-1 flex flex-col h-screen overflow-hidden" id="mainContainer">
+        <!-- Centered Empty State -->
+        <div id="emptyState" class="flex-1 flex flex-col items-center justify-center px-4">
+            <div class="text-center mb-8">
+                <i data-lucide="message-circle" class="w-20 h-20 mb-6 stroke-1 text-gray-300 mx-auto"></i>
+                <h1 class="text-3xl font-semibold text-gray-800 mb-2">What can I help with?</h1>
+                <p class="text-sm text-gray-500">Upload images, PDFs, or audio files to get started</p>
             </div>
+
+            <!-- Centered Input Form -->
+            <div class="w-full max-w-3xl" id="centeredForm"></div>
         </div>
 
-        <div class="border-t border-gray-200 p-4 bg-white">
+        <!-- Chat Area (hidden initially) -->
+        <div id="chatArea" class="hidden flex-1 overflow-y-auto"></div>
+
+        <!-- Bottom Form Container (hidden initially) -->
+        <div id="bottomFormContainer" class="hidden border-t border-gray-200 p-4 bg-white">
             <div class="max-w-3xl mx-auto">
                 <div id="uploadPreview" class="hidden mb-3 p-3 bg-gray-100 rounded-lg flex items-center gap-3">
                     <img id="previewImage" src="" alt="Preview" class="w-16 h-16 object-cover rounded-lg">

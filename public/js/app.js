@@ -2,6 +2,7 @@ let selectedFile = null;
 let conversationHistory = [];
 let uploadedFiles = [];
 let sessionId = 'session_' + Date.now();
+let userIsScrolling = false;
 
 // Auto-expand textarea
 function autoExpandTextarea(textarea) {
@@ -9,12 +10,40 @@ function autoExpandTextarea(textarea) {
     textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
 }
 
+// Smart scroll - only auto-scroll if user is at bottom
+function smartScroll(element) {
+    if (!element) return;
+    
+    // Check if user is near bottom (within 100px threshold)
+    const isNearBottom = element.scrollHeight - element.scrollTop - element.clientHeight < 100;
+    
+    // Only auto-scroll if user is at/near bottom or not manually scrolling
+    if (isNearBottom || !userIsScrolling) {
+        element.scrollTop = element.scrollHeight;
+    }
+}
+
 // Initialize textarea auto-expand on load
 document.addEventListener('DOMContentLoaded', () => {
+    // Move form to centered position initially
+    moveFormToCentered();
+    
+    // Initialize icons
+    lucide.createIcons();
+    
     const promptInput = document.getElementById('prompt');
     if (promptInput) {
         promptInput.addEventListener('input', function() {
             autoExpandTextarea(this);
+        });
+    }
+    
+    // Track user scroll behavior
+    const chatArea = document.getElementById('chatArea');
+    if (chatArea) {
+        chatArea.addEventListener('scroll', () => {
+            const isAtBottom = chatArea.scrollHeight - chatArea.scrollTop - chatArea.clientHeight < 100;
+            userIsScrolling = !isAtBottom;
         });
     }
     
@@ -34,6 +63,37 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+function moveFormToCentered() {
+    const centeredForm = document.getElementById('centeredForm');
+    const bottomFormInner = document.querySelector('#bottomFormContainer .max-w-3xl');
+    
+    // Move all form elements from bottom to centered
+    if (bottomFormInner) {
+        while (bottomFormInner.firstChild) {
+            centeredForm.appendChild(bottomFormInner.firstChild);
+        }
+    }
+}
+
+function moveFormToBottom() {
+    const form = document.getElementById('uploadForm');
+    const uploadPreview = document.getElementById('uploadPreview');
+    const centeredForm = document.getElementById('centeredForm');
+    const bottomFormContainer = document.getElementById('bottomFormContainer');
+    const bottomFormInner = bottomFormContainer.querySelector('.max-w-3xl');
+    
+    // Move all elements from centered to bottom
+    while (centeredForm.firstChild) {
+        bottomFormInner.appendChild(centeredForm.firstChild);
+    }
+    
+    // Hide empty state, show chat area and bottom form
+    document.getElementById('emptyState').classList.add('hidden');
+    document.getElementById('chatArea').classList.remove('hidden');
+    document.getElementById('chatArea').classList.add('flex-1', 'overflow-y-auto');
+    document.getElementById('bottomFormContainer').classList.remove('hidden');
+}
 
 function toggleFileTypeMenu(event) {
     if (event) {
@@ -255,10 +315,6 @@ function parseInlineMarkdown(text) {
 
 function addMessage(type, content, fileUrl = null, fileInfo = null) {
     const chatArea = document.getElementById('chatArea');
-    const emptyState = chatArea.querySelector('.flex.flex-col.items-center');
-    if (emptyState && emptyState.parentElement === chatArea) {
-        chatArea.innerHTML = '';
-    }
 
     const messageDiv = document.createElement('div');
     messageDiv.className = `message-slide py-6 ${type === 'user' ? 'bg-white' : 'bg-gray-50'}`;
@@ -326,7 +382,7 @@ function addMessage(type, content, fileUrl = null, fileInfo = null) {
     }
 
     chatArea.appendChild(messageDiv);
-    chatArea.scrollTop = chatArea.scrollHeight;
+    smartScroll(chatArea);
     lucide.createIcons();
 }
 
@@ -357,7 +413,7 @@ function showLoading() {
         </div>
     `;
     chatArea.appendChild(loadingDiv);
-    chatArea.scrollTop = chatArea.scrollHeight;
+    smartScroll(chatArea);
     lucide.createIcons();
 }
 
@@ -432,13 +488,18 @@ function copyText(button) {
 
 function clearChat() {
     const chatArea = document.getElementById('chatArea');
-    chatArea.innerHTML = `
-        <div class="flex flex-col items-center justify-center h-full text-gray-400 px-4">
-            <i data-lucide="message-circle" class="w-16 h-16 mb-4 stroke-1"></i>
-            <p class="text-lg">Ask anything or upload an image</p>
-            <p class="text-sm mt-2">Image upload is optional</p>
-        </div>
-    `;
+    chatArea.innerHTML = '';
+    
+    // Hide chat area and bottom form
+    chatArea.classList.add('hidden');
+    document.getElementById('bottomFormContainer').classList.add('hidden');
+    
+    // Show empty state
+    document.getElementById('emptyState').classList.remove('hidden');
+    
+    // Move form back to centered
+    moveFormToCentered();
+    
     conversationHistory = [];
     uploadedFiles = [];
     sessionId = 'session_' + Date.now();
@@ -459,9 +520,30 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     promptInput.value = '';
     promptInput.style.height = 'auto'; // Reset textarea height
     
+    // Reset scroll tracking for new message (auto-scroll to new response)
+    userIsScrolling = false;
+    
+    // Switch layout to bottom BEFORE any chat area manipulation
+    const chatArea = document.getElementById('chatArea');
+    const isFirstMessage = chatArea.classList.contains('hidden');
+    if (isFirstMessage) {
+        moveFormToBottom();
+    }
 
     try {
         if (fileToSend) {
+            // Show user message FIRST with file preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                addMessage('user', prompt, e.target.result, {
+                    name: fileToSend.name,
+                    size: fileToSend.size,
+                    type: fileToSend.type
+                });
+            };
+            reader.readAsDataURL(fileToSend);
+            
+            // THEN upload file to Gemini
             showAlert('Uploading file to Gemini...', 'info');
             showLoading();
             
@@ -485,16 +567,6 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             uploadedFiles.push(uploadResult.file);
             
             showAlert(`File uploaded: ${uploadResult.file.displayName}`, 'success');
-            
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                addMessage('user', prompt, e.target.result, {
-                    name: fileToSend.name,
-                    size: fileToSend.size,
-                    type: fileToSend.type
-                });
-            };
-            reader.readAsDataURL(fileToSend);
             
             removeFile();
         } else {
@@ -620,7 +692,7 @@ function addStreamingMessage(type, content) {
     `;
 
     chatArea.appendChild(messageDiv);
-    chatArea.scrollTop = chatArea.scrollHeight;
+    smartScroll(chatArea);
     lucide.createIcons();
     
     return messageId;
@@ -637,7 +709,7 @@ function updateStreamingMessage(messageId, content) {
     }
 
     const chatArea = document.getElementById('chatArea');
-    chatArea.scrollTop = chatArea.scrollHeight;
+    smartScroll(chatArea);
 }
 
 document.getElementById('prompt').addEventListener('keydown', (e) => {
