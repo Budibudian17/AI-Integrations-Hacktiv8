@@ -130,18 +130,30 @@ function handleFileSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
 
+    console.log('File selected:', file.name, file.type, file.size);
+    
     selectedFile = file;
+    event.target.value = '';
+    
     const isImage = file.type.startsWith('image/');
     const isAudio = file.type.startsWith('audio/');
     
-    document.getElementById('fileName').textContent = file.name;
+    const fileNameElement = document.getElementById('fileName');
+    const fileSizeElement = document.getElementById('fileSize');
+    const previewElement = document.getElementById('uploadPreview');
+    const previewImage = document.getElementById('previewImage');
+    
+    if (!fileNameElement || !fileSizeElement || !previewElement) {
+        console.error('Preview elements not found!');
+        return;
+    }
+    
+    fileNameElement.textContent = file.name;
     const fileSizeKB = file.size / 1024;
     const fileSizeText = fileSizeKB > 1024 
         ? `${(fileSizeKB / 1024).toFixed(1)} MB` 
         : `${fileSizeKB.toFixed(1)} KB`;
-    document.getElementById('fileSize').textContent = fileSizeText;
-    
-    const previewImage = document.getElementById('previewImage');
+    fileSizeElement.textContent = fileSizeText;
     
     if (isImage) {
         const reader = new FileReader();
@@ -150,13 +162,15 @@ function handleFileSelect(event) {
             previewImage.classList.remove('hidden');
         };
         reader.readAsDataURL(file);
+        
+        fileNameElement.textContent = file.name;
     } else {
         previewImage.classList.add('hidden');
         const fileExt = file.name.split('.').pop().toUpperCase();
         const icon = isAudio ? 'music' : 'file-text';
         const bgColor = isAudio ? 'bg-purple-100 text-purple-700' : 'bg-gray-200';
         
-        document.getElementById('fileName').innerHTML = `
+        fileNameElement.innerHTML = `
             <div class="flex items-center gap-2">
                 <i data-lucide="${icon}" class="w-4 h-4"></i>
                 <span>${file.name}</span>
@@ -165,8 +179,10 @@ function handleFileSelect(event) {
         `;
     }
     
-    document.getElementById('uploadPreview').classList.remove('hidden');
-    document.getElementById('uploadPreview').classList.add('flex');
+    previewElement.classList.remove('hidden');
+    previewElement.classList.add('flex');
+    previewElement.style.display = 'flex';
+    
     lucide.createIcons();
     
     if (isAudio) {
@@ -178,11 +194,22 @@ function handleFileSelect(event) {
 
 function removeFile() {
     selectedFile = null;
-    document.getElementById('file').value = '';
+    const fileInput = document.getElementById('file');
+    if (fileInput) fileInput.value = '';
+    
     const preview = document.getElementById('uploadPreview');
-    preview.style.display = 'none';
-    preview.classList.add('hidden');
-    preview.classList.remove('flex');
+    if (preview) {
+        preview.classList.add('hidden');
+        preview.classList.remove('flex');
+        preview.style.display = 'none';
+    }
+    
+    const previewImage = document.getElementById('previewImage');
+    if (previewImage) {
+        previewImage.src = '';
+        previewImage.classList.add('hidden');
+    }
+    
     hideAudioQuickActions();
 }
 
@@ -538,11 +565,13 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             }
 
             const uploadResult = await uploadResponse.json();
-            uploadedFiles.push(uploadResult.file);
+            const currentFile = uploadResult.file;
             
-            showAlert(`File uploaded: ${uploadResult.file.displayName}`, 'success');
+            showAlert(`File uploaded: ${currentFile.displayName}`, 'success');
             
             removeFile();
+            
+            uploadedFiles.push(currentFile);
         } else {
             addMessage('user', prompt);
         }
@@ -554,7 +583,7 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
 
         showLoading();
 
-        const fileUris = uploadedFiles.map(f => f.uri);
+        const fileUris = fileToSend ? uploadedFiles.slice(-1).map(f => f.uri) : [];
         
         const response = await fetch('/generate', {
             method: 'POST',
