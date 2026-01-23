@@ -1,3 +1,5 @@
+const API_BASE_URL = 'https://YOUR_BACKEND_URL_HERE';
+
 let selectedFile = null;
 let conversationHistory = [];
 let uploadedFiles = [];
@@ -552,7 +554,7 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             formData.append('file', fileToSend);
             formData.append('sessionId', sessionId);
 
-            const uploadResponse = await fetch('/upload-file', {
+            const uploadResponse = await fetch(`${API_BASE_URL}/upload-file`, {
                 method: 'POST',
                 body: formData
             });
@@ -585,7 +587,7 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
 
         const fileUris = fileToSend ? uploadedFiles.slice(-1).map(f => f.uri) : [];
         
-        const response = await fetch('/generate', {
+        const response = await fetch(`${API_BASE_URL}/generate`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
